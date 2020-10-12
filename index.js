@@ -2,6 +2,7 @@ const fs = require('fs');
 const argv = require('argv');
 const PDFDocument = require('pdfkit');
 const url = require('url');
+const fetch = require('node-fetch');
 
 //https://meta01.library.pref.nara.jp/mmd/iiif/400/138734/582810.tiff/500,355,3069,2160/3069,2160/0/default.jpg
 //https://meta01.library.pref.nara.jp/mmd/iiif/400/138734/582889.tiff/500,355,3069,2160/3069,2160/0/default.jpg
@@ -104,7 +105,27 @@ const tasks = Array.from(Array(fullnumber).keys()).map((x) => {
 });
 console.log(tasks);
 
-throw('hoge');
+
+async function loader() {
+  for (let i = 0; i < tasks.length; i++) {
+    const task = tasks[i];
+    const url = task[0];
+    const tmpfile = task[1];
+
+    const res = await fetch(url);
+    const buffer = await res.buffer();
+    console.log(buffer);
+  }
+
+
+
+
+
+};
+
+loader();
+
+/*throw('hoge');
 
 const size = 'A4';
 const arrSize = size2array(size);
@@ -154,7 +175,7 @@ doc.image('./582889.jpg', {
 });
 
 // Finalize PDF file
-doc.end();
+doc.end();*/
 
 function size2array(size) {
   if (Array.isArray(size)) return size;
