@@ -7,6 +7,7 @@ const sizeOf = require('image-size');
 
 //https://meta01.library.pref.nara.jp/mmd/iiif/400/138734/582810.tiff/500,355,3069,2160/3069,2160/0/default.jpg
 //https://meta01.library.pref.nara.jp/mmd/iiif/400/138734/582889.tiff/500,355,3069,2160/3069,2160/0/default.jpg
+//node index.js -u "https://meta01.library.pref.nara.jp/mmd/iiif/400/138734/{n}.tiff/500,355,3069,2160/3069,2160/0/default.jpg" -s 582810 -e 582889 -z A4
 
 argv.type( 'url', function( value ) {
   const parsed = url.parse(value);
