@@ -1,5 +1,110 @@
 const fs = require('fs');
+const argv = require('argv');
 const PDFDocument = require('pdfkit');
+const url = require('url');
+
+//https://meta01.library.pref.nara.jp/mmd/iiif/400/138734/582810.tiff/500,355,3069,2160/3069,2160/0/default.jpg
+//https://meta01.library.pref.nara.jp/mmd/iiif/400/138734/582889.tiff/500,355,3069,2160/3069,2160/0/default.jpg
+
+argv.type( 'url', function( value ) {
+  const parsed = url.parse(value);
+  console.log(parsed);
+  if (!value || !parsed.protocol || !parsed.protocol.match(/^http/) ||
+      !parsed.host || !parsed.path) throw('URL value must be valid http url.');
+  if (!value.match(/\{n\}/)) throw('URL value must include placeholder "{n}".');
+  return value;
+});
+
+const stringint = function(key, value) {
+  if (!value || !value.match(/^\d+$/)) throw(`Argument ${key} must be integer value`);
+  const number = parseInt(value);
+  const length = value.length;
+  return [value, length, number];
+};
+
+argv.type( 'start', function( value ) {
+  return stringint('start', value);
+});
+
+argv.type( 'end', function( value ) {
+  return stringint('end', value);
+});
+
+argv.type( 'size', function( value ) {
+  const arr = size2array(value);
+  if (!arr) throw('Size value must be valid size definition');
+  return arr;
+});
+
+argv.option([
+  {
+    name: 'url',
+    short: 'u',
+    type : 'url',
+    description :'URL template of jpg files. Put placeholder of numbers as "{n}."',
+    example: "'node jpg2pdf.js --url=\"http://example.com/{n}.jpg\"' or 'node jpg2pdf.js -u \"http://example.com/{n}.jpg\"'"
+  },
+  {
+    name: 'start',
+    short: 's',
+    type : 'start',
+    description :'Start number of url place holder.',
+    example: "'node jpg2pdf.js --start=0001' or 'node jpg2pdf.js -s 0001'"
+  },
+  {
+    name: 'end',
+    short: 'e',
+    type : 'end',
+    description :'End number of url place holder.',
+    example: "'node jpg2pdf.js --start=0100' or 'node jpg2pdf.js -e 0100'"
+  },
+  {
+    name: 'size',
+    short: 'z',
+    type : 'size',
+    description :'Specify pdf size. If not specified or invalid case, using "LETTER" size.',
+    example: "'node jpg2pdf.js --size=A4' or 'node jpg2pdf.js -z A4'"
+  },
+  {
+    name: 'out',
+    short: 'o',
+    type : 'path',
+    description :'Specify output file name. If not specified, using "./output.pdf".',
+    example: "'node jpg2pdf.js --out=special.pdf' or 'node jpg2pdf.js -o special.pdf'"
+  }
+]);
+
+const args = argv.run().options;
+console.log(args);
+const err = ['url', 'start', 'end'].reduce((prev, curr) => {
+  return !args[curr] ? curr : prev;
+}, null);
+if (err) throw(`Argument ${err} is mandatory.`);
+const template = args.url;
+const start_str = args.start[0];
+const start_len = args.start[1];
+const start_num = args.start[2];
+const end_str = args.end[0];
+const end_len = args.end[1];
+const end_num = args.end[2];
+const size_arr = args.size;
+const out = args.out || './output.pdf';
+
+if (end_num <= start_num) throw('Start value must be smaller than end value.');
+const fullnumber = end_num - start_num + 1;
+const prevzero = Array.from(Array(start_len).keys()).map(x=>'0').join('');
+const tasks = Array.from(Array(fullnumber).keys()).map((x) => {
+  let ret;
+  const tempnum = `${x + start_num}`;
+  if (tempnum.length >= start_len) ret = tempnum;
+  else ret = `${prevzero}${tempnum}`.slice(-1 * start_len);
+  const url = template.replace('{n}', ret);
+  const tmpfile = `./${ret}.jpg`;
+  return [url, tmpfile];
+});
+console.log(tasks);
+
+throw('hoge');
 
 const size = 'A4';
 const arrSize = size2array(size);
