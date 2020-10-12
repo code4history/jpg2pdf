@@ -3,13 +3,13 @@ const argv = require('argv');
 const PDFDocument = require('pdfkit');
 const url = require('url');
 const fetch = require('node-fetch');
+const sizeOf = require('image-size');
 
 //https://meta01.library.pref.nara.jp/mmd/iiif/400/138734/582810.tiff/500,355,3069,2160/3069,2160/0/default.jpg
 //https://meta01.library.pref.nara.jp/mmd/iiif/400/138734/582889.tiff/500,355,3069,2160/3069,2160/0/default.jpg
 
 argv.type( 'url', function( value ) {
   const parsed = url.parse(value);
-  console.log(parsed);
   if (!value || !parsed.protocol || !parsed.protocol.match(/^http/) ||
       !parsed.host || !parsed.path) throw('URL value must be valid http url.');
   if (!value.match(/\{n\}/)) throw('URL value must include placeholder "{n}".');
@@ -76,7 +76,6 @@ argv.option([
 ]);
 
 const args = argv.run().options;
-console.log(args);
 const err = ['url', 'start', 'end'].reduce((prev, curr) => {
   return !args[curr] ? curr : prev;
 }, null);
@@ -103,10 +102,15 @@ const tasks = Array.from(Array(fullnumber).keys()).map((x) => {
   const tmpfile = `./${ret}.jpg`;
   return [url, tmpfile];
 });
-console.log(tasks);
-
 
 async function loader() {
+  const doc = new PDFDocument(
+      {
+        autoFirstPage: false
+      }
+  );
+  doc.pipe(fs.createWriteStream(out));
+
   for (let i = 0; i < tasks.length; i++) {
     const task = tasks[i];
     const url = task[0];
@@ -114,13 +118,31 @@ async function loader() {
 
     const res = await fetch(url);
     const buffer = await res.buffer();
-    console.log(buffer);
+    fs.writeFileSync(tmpfile, buffer);
+
+    const eachSize = sizeOf(tmpfile);
+    const lorp = eachSize.width > eachSize.height ? 'landscape' : 'portrait';
+    const fit = lorp == 'landscape' ? [size_arr[1], size_arr[0]] : size_arr;
+    doc.addPage(
+      {
+        margin: 0,
+        layout: lorp,
+        size: size_arr
+      }
+    );
+    doc.image(tmpfile, {
+      fit: fit,
+      align: 'center',
+      valign: 'center'
+    });
   }
 
+  doc.end();
 
-
-
-
+  tasks.map((task) => {
+    const tmpfile = task[1];
+    fs.unlink(tmpfile, function() {});
+  })
 };
 
 loader();
